@@ -1,5 +1,6 @@
 import { Base64Message } from './Model/Base64Message'
 import { DataSource, MqttSource } from './DataSource'
+import { convertLongToNumber } from './utils/LongConverter'
 import {
   AddMqttConnection,
   MqttMessage,
@@ -54,9 +55,13 @@ export class ConnectionManager {
       let decoded_payload = null
       decoded_payload = Base64Message.fromBuffer(buffer)
 
+      // Convert any Long objects to numbers for proper JSON serialization
+      // This handles SparkplugB timestamp fields with structure: { low, high, unsigned }
+      const cleanedPayload = convertLongToNumber(decoded_payload)
+
       this.backendEvents.emit(messageEvent, {
         topic,
-        payload: decoded_payload,
+        payload: cleanedPayload,
         qos: packet.qos,
         retain: packet.retain,
         messageId: packet.messageId,
